@@ -47,6 +47,10 @@
   // exported.
   [extraModules addObject:[[EXViewManagerAdapter alloc] init]];
 
+  // One could add some modules to the Module Registry after creating it.
+  // Here is our last call for finalizing initialization.
+  [moduleRegistry initialize];
+
   // It is possible that among internal modules there are some RCTBridgeModules --
   // let's add them to extraModules here.
   for (id<EXInternalModule> module in [moduleRegistry getAllInternalModules]) {
@@ -56,9 +60,6 @@
     }
   }
 
-  // One could add some modules to the Module Registry after creating it.
-  // Here is our last call for finalizing initialization.
-  [moduleRegistry initialize];
   return extraModules;
 }
 

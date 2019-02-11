@@ -70,17 +70,30 @@
 
 - (void)resolveInternalModulesConflicts
 {
+  if (_internalModules) {
+    // Conflict resolution has already been completed.
+    return;
+  }
+
   _internalModules = [NSMapTable weakToStrongObjectsMapTable];
+  NSMutableSet<id<EXInternalModule>> *internalModulesSet = [NSMutableSet new];
+  [internalModulesSet addObjectsFromArray:[[_internalModules dictionaryRepresentation] allValues]];
   for (Protocol *protocol in _internalModulesPreResolution) {
     NSArray<id<EXInternalModule>> *conflictingModules = [_internalModulesPreResolution objectForKey:protocol];
 
+    id<EXInternalModule> resolvedModule;
     if ([conflictingModules count] > 1 && _delegate) {
-      id<EXInternalModule> resolvedModule = [_delegate pickInternalModuleImplementingInterface:protocol fromAmongModules:conflictingModules];
-      [_internalModules setObject:resolvedModule forKey:protocol];
+      resolvedModule = [_delegate pickInternalModuleImplementingInterface:protocol fromAmongModules:conflictingModules];
     } else {
-      [_internalModules setObject:[conflictingModules lastObject] forKey:protocol];
+      resolvedModule = [conflictingModules lastObject];
     }
+
+    [_internalModules setObject:resolvedModule forKey:protocol];
+    [self maybeAddRegistryConsumer:resolvedModule];
+    [internalModulesSet addObject:resolvedModule];
   }
+  _internalModulesSet = internalModulesSet;
+  _internalModulesPreResolution = nil;
 }
 
 - (void)initialize
@@ -96,23 +109,19 @@
 - (void)registerInternalModule:(id<EXInternalModule>)internalModule
 {
   for (Protocol *exportedInterface in [[internalModule class] exportedInterfaces]) {
-    if (![_internalModulesPreResolution objectForKey:exportedInterface]) {
-      [_internalModulesPreResolution setObject:[NSMutableArray array] forKey:exportedInterface];
-    }
+    if (_internalModules) {
+      [_internalModules setObject:internalModule forKey:exportedInterface];
+    } else {
+      // Conflict resolution has not happened yet
+      if (![_internalModulesPreResolution objectForKey:exportedInterface]) {
+        [_internalModulesPreResolution setObject:[NSMutableArray array] forKey:exportedInterface];
+      }
 
-    [[_internalModulesPreResolution objectForKey:exportedInterface] addObject:internalModule];
+      [[_internalModulesPreResolution objectForKey:exportedInterface] addObject:internalModule];
+    }
   }
 
   [_internalModulesSet addObject:internalModule];
-  [self maybeAddRegistryConsumer:internalModule];
-}
-
-- (id<EXInternalModule>)unregisterInternalModuleForProtocol:(Protocol *)protocol
-{
-  id<EXInternalModule> module = [_internalModules objectForKey:protocol];
-  [_internalModulesSet removeObject:module];
-  [_internalModules removeObjectForKey:protocol];
-  return module;
 }
 
 - (void)registerExportedModule:(EXExportedModule *)exportedModule
@@ -166,6 +175,7 @@
 
 - (id)getModuleImplementingProtocol:(Protocol *)protocol
 {
+  [self resolveInternalModulesConflicts];
   return [_internalModules objectForKey:protocol];
 }
 
@@ -186,6 +196,7 @@
 
 - (NSArray<id<EXInternalModule>> *)getAllInternalModules
 {
+  [self resolveInternalModulesConflicts];
   return [_internalModulesSet allObjects];
 }
 

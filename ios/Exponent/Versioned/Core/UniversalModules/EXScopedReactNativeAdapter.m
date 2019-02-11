@@ -5,6 +5,7 @@
 
 @interface EXReactNativeAdapter (Protected)
 
+- (void)startObserving;
 - (void)handleAppStateDidChange:(NSNotification *)notification;
 
 @end
@@ -25,37 +26,43 @@
   if (bridge) {
     [super setBridge:bridge];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleAppStateDidChange:)
-                                                 name:EX_UNVERSIONED(@"EXKernelBridgeDidForegroundNotification")
-                                               object:self.bridge];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleAppStateDidChange:)
-                                                 name:EX_UNVERSIONED(@"EXKernelBridgeDidBackgroundNotification")
-                                               object:self.bridge];
+//    [[NSNotificationCenter defaultCenter] addObserver:self
+//                                             selector:@selector(handleAppStateDidChange:)
+//                                                 name:EX_UNVERSIONED(@"EXKernelBridgeDidForegroundNotification")
+//                                               object:self.bridge];
+//    [[NSNotificationCenter defaultCenter] addObserver:self
+//                                             selector:@selector(handleAppStateDidChange:)
+//                                                 name:EX_UNVERSIONED(@"EXKernelBridgeDidBackgroundNotification")
+//                                               object:self.bridge];
     [self setAppStateToForeground];
   } else {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+//    [[NSNotificationCenter defaultCenter] removeObserver:self];
   }
 }
 
-- (void)dealloc
+- (void)startObserving
 {
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  // EXKernel handles this for us
+  return;
 }
 
-- (void)handleAppStateDidChange:(NSNotification *)notification
-{
-  // For versioning sake let's not have extra parentheses in lines with EX_UNVERSIONED
-  NSString *didForegroundNotificationName = EX_UNVERSIONED(@"EXKernelBridgeDidForegroundNotification");
-  NSString *didBackgroundNotificationName = EX_UNVERSIONED(@"EXKernelBridgeDidBackgroundNotification");
-  if (!self.isForegrounded && [notification.name isEqualToString:didForegroundNotificationName]) {
-    [self setAppStateToForeground];
-  } else if (self.isForegrounded && [notification.name isEqualToString:didBackgroundNotificationName]) {
-    [self setAppStateToBackground];
-  } else {
-    [super handleAppStateDidChange:notification];
-  }
-}
+//- (void)dealloc
+//{
+//  [[NSNotificationCenter defaultCenter] removeObserver:self];
+//}
+
+//- (void)handleAppStateDidChange:(NSNotification *)notification
+//{
+//  // For versioning sake let's not have extra parentheses in lines with EX_UNVERSIONED
+//  NSString *didForegroundNotificationName = EX_UNVERSIONED(@"EXKernelBridgeDidForegroundNotification");
+//  NSString *didBackgroundNotificationName = EX_UNVERSIONED(@"EXKernelBridgeDidBackgroundNotification");
+//  if (!self.isForegrounded && [notification.name isEqualToString:didForegroundNotificationName]) {
+//    [self setAppStateToForeground];
+//  } else if (self.isForegrounded && [notification.name isEqualToString:didBackgroundNotificationName]) {
+//    [self setAppStateToBackground];
+//  } else {
+//    [super handleAppStateDidChange:notification];
+//  }
+//}
 
 @end
